@@ -1,0 +1,22 @@
+{
+    "name": "nodesql",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "nodemon server.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "express": "^4.18.1",
+        "pg": "^8.7.3",
+        "redis": "^4.6.7"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    }
+}

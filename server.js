@@ -12,14 +12,24 @@ const DATABASE = process.env.DATABASE;
 const TABLE = process.env.TABLE;
 
 const query = `
-SELECT ST_AsPNG(
-  ST_AsRaster(
+WITH rasters AS (
+    SELECT ST_AsRaster(ST_collect(Array(SELECT ST_TileEnvelope($1,$2,$3))), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[179, 208, 255], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
       ST_collect(Array(
           SELECT ST_Intersection(geom,ST_TileEnvelope($1,$2,$3)) FROM ${TABLE} UNION
           SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
       )
-  ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[100,100,100], ARRAY[0,0,0])
-);
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[251, 255, 194], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
+        ST_collect(Array(
+            SELECT ST_boundary(ST_Intersection(geom,ST_TileEnvelope($1,$2,$3))) FROM ${TABLE} UNION
+            SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
+        )
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[1,1,1], ARRAY[0,0,0]) AS rast
+)
+SELECT ST_AsPNG(ST_UNION(rast)) FROM rasters;
 `;
 
 const pathMakesSense = (z, x, y) => {

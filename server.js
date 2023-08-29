@@ -11,6 +11,40 @@ const PGUSERNAME = process.env.PGUSERNAME;
 const PASSWORD = process.env.PASSWORD;
 const DATABASE = process.env.DATABASE;
 const TABLE = process.env.TABLE;
+const TABLE2 = process.env.TABLE2;
+
+const query = `
+WITH rasters AS (
+    SELECT ST_AsRaster(ST_collect(Array(SELECT ST_TileEnvelope($1,$2,$3))), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[179, 208, 255], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
+      ST_collect(Array(
+          SELECT ST_Intersection(geom,ST_TileEnvelope($1,$2,$3)) FROM ${TABLE} UNION
+          SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
+      )
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[251, 255, 194], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
+        ST_collect(Array(
+            SELECT ST_boundary(ST_Intersection(geom,ST_TileEnvelope($1,$2,$3))) FROM ${TABLE} UNION
+            SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
+        )
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[1,1,1], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
+        ST_collect(Array(
+            SELECT ST_Intersection(ST_collect(Array(SELECT way FROM ${TABLE2} WHERE highway IN ('motorway', 'trunk', 'primary'))),ST_TileEnvelope($1,$2,$3))  UNION
+            SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
+        )
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[1,1,1], ARRAY[0,0,0]) AS rast
+)
+SELECT ST_AsPNG(ST_UNION(rast)) FROM rasters;
+`;
+
+const pathMakesSense = (z, x, y) => {
+  const maxCoord = 2 ** z;
+  return z >= 0 && z <= 20 && x >= 0 && x < maxCoord && y >= 0 && y < maxCoord;
+};
 
 const client = new Client({
   user: PGUSERNAME,
@@ -18,33 +52,14 @@ const client = new Client({
   password: PASSWORD,
 });
 
-console.log("Connecting to postgres");
+console.log(`Connecting to Postgres database ${DATABASE}`);
 client.connect();
-console.log("Connected to Postgres");
 
 const redis_client = createClient();
-
 redis_client.on("error", (err) => console.log("Redis Client Error", err));
 
 console.log("Connecting to redis");
 redis_client.connect();
-console.log("Connected to redis");
-
-let query = `
-SELECT ST_AsPNG(
-  ST_AsRaster(
-      ST_collect(Array(
-          SELECT ST_Intersection(geom,ST_TileEnvelope($1,$2,$3)) FROM ${TABLE} UNION
-          SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
-      )
-  ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[100,100,100], ARRAY[0,0,0])
-);
-`;
-
-function pathMakesSense(z, x, y) {
-  let maxCoord = 2 ** z;
-  return z >= 0 && z <= 20 && x >= 0 && x < maxCoord && y >= 0 && y < maxCoord;
-}
 
 let app = express();
 
@@ -67,7 +82,6 @@ app.get("/tiles/:z/:x/:y", async function (req, res) {
           "Content-Length": img.length,
         });
         res.end(img);
-        console.log(`Rendered ${z}, ${x}, ${y}`);
         redis_client.set(`${z}_${x}_${y}`, img.toString("hex"));
       }
     } catch (error) {

@@ -10,6 +10,7 @@ const PGUSERNAME = process.env.PGUSERNAME;
 const PASSWORD = process.env.PASSWORD;
 const DATABASE = process.env.DATABASE;
 const TABLE = process.env.TABLE;
+const TABLE2 = "planet_osm_line";
 
 const query = `
 WITH rasters AS (
@@ -25,6 +26,13 @@ WITH rasters AS (
     SELECT ST_AsRaster(
         ST_collect(Array(
             SELECT ST_boundary(ST_Intersection(geom,ST_TileEnvelope($1,$2,$3))) FROM ${TABLE} UNION
+            SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
+        )
+    ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[1,1,1], ARRAY[0,0,0]) AS rast
+    UNION ALL
+    SELECT ST_AsRaster(
+        ST_collect(Array(
+            SELECT ST_Intersection(ST_collect(Array(SELECT way FROM ${TABLE2} WHERE highway IN ('motorway', 'trunk', 'primary'))),ST_TileEnvelope($1,$2,$3))  UNION
             SELECT ST_boundary(ST_TileEnvelope($1,$2,$3))
         )
     ), 256, 256, ARRAY['8BUI', '8BUI', '8BUI'], ARRAY[1,1,1], ARRAY[0,0,0]) AS rast

@@ -2,6 +2,7 @@ require("dotenv").config();
 const { Client } = require("pg");
 const express = require("express");
 const path = require("path");
+const { createClient } = require("redis");
 
 const PORT = process.env.PORT || 8080;
 const HOSTNAME = process.env.HOSTNAME || "127.0.0.1";
@@ -51,7 +52,14 @@ const client = new Client({
   password: PASSWORD,
 });
 
+console.log(`Connecting to Postgres database ${DATABASE}`);
 client.connect();
+
+const redis_client = createClient();
+redis_client.on("error", (err) => console.log("Redis Client Error", err));
+
+console.log("Connecting to redis");
+redis_client.connect();
 
 let app = express();
 
@@ -59,13 +67,23 @@ app.get("/tiles/:z/:x/:y", async function (req, res) {
   const { z, x, y } = req.params;
   if (pathMakesSense(parseInt(z), parseInt(x), parseInt(y))) {
     try {
-      let response = await client.query(query, [z, x, y]);
-      img = response.rows[0].st_aspng;
-      res.writeHead(200, {
-        "Content-Type": "image/png",
-        "Content-Length": img.length,
-      });
-      res.end(img);
+      redisValue = await redis_client.get(`${z}_${x}_${y}`);
+      if (redisValue) {
+        res.writeHead(200, {
+          "Content-Type": "image/png",
+          "Content-Length": Buffer.from(redisValue, "hex").length,
+        });
+        res.end(Buffer.from(redisValue, "hex"));
+      } else {
+        let response = await client.query(query, [z, x, y]);
+        img = response.rows[0].st_aspng;
+        res.writeHead(200, {
+          "Content-Type": "image/png",
+          "Content-Length": img.length,
+        });
+        res.end(img);
+        redis_client.set(`${z}_${x}_${y}`, img.toString("hex"));
+      }
     } catch (error) {
       console.log(error);
     }

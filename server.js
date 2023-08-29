@@ -10,7 +10,7 @@ const PGUSERNAME = process.env.PGUSERNAME;
 const PASSWORD = process.env.PASSWORD;
 const DATABASE = process.env.DATABASE;
 const TABLE = process.env.TABLE;
-const TABLE2 = "planet_osm_line";
+const TABLE2 = process.env.TABLE2;
 
 const query = `
 WITH rasters AS (

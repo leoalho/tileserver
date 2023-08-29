@@ -7,7 +7,8 @@ A minimalist raster tile server with nodejs, leaflet snd postGIS
 PGUSERNAME: postgres username\
 PASSWORD: postgres password\
 DATABASE: name of the database\
-TABLE = Name of the table containing the data
+TABLE = Name of the table containing the data for the polygons
+TABLE2 = Name of the table containing osm basemap data
 
 ### Optional
 

@@ -1,11 +1,13 @@
 {
-    "name": "nodesql",
+    "name": "tileserver",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "nodemon server.js"
+        "dev": "nodemon ./src/server.js",
+        "prerender": "node ./src/prerenderer.js",
+        "start": "node ./src/server.js"
     },
     "keywords": [],
     "author": "",

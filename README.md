@@ -7,10 +7,12 @@ A minimalist raster tile server with nodejs, leaflet snd postGIS
 PGUSERNAME: postgres username\
 PASSWORD: postgres password\
 DATABASE: name of the database\
-TABLE = Name of the table containing the data for the polygons
-TABLE2 = Name of the table containing osm basemap data
+TABLE = Name of the table containing the data for the polygons\
+TABLE2 = Name of the table containing osm basemap data\
+REDISPORT = Port of the redis cache containing the prerendered tiles.
 
 ### Optional
 
 HOSTNAME = Ip address of the host, default value 127.0.0.1\
-PORT = Port for the server, default 8080
+PORT = Port for the server, default 8080\
+PRERENDEREDTILES = The zoom level up to which there are prerendered tiles in the cache, default -1

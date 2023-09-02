@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { createClient } = require("redis");
-const pg = require("./src/pgConnect");
-const { query } = require("./src/query");
+const pg = require("./pgConnect");
+const { query } = require("./query");
 
 const REDIS_PORT = process.env.REDISPORT;
 const LIMIT = parseInt(process.argv[2]);
